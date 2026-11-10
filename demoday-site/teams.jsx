@@ -5,39 +5,21 @@ function initials(name) {
 }
 
 // Flag glyph for the founder's HQ (single character pair, e.g. "KR" → 🇰🇷)
-const FLAG = { TW:"🇹🇼", SG:"🇸🇬", KR:"🇰🇷", MY:"🇲🇾", US:"🇺🇸", HK:"🇭🇰", ID:"🇮🇩", JP:"🇯🇵", VN:"🇻🇳", PH:"🇵🇭", AU:"🇦🇺", FR:"🇫🇷", ES:"🇪🇸", AR:"🇦🇷", ARG:"🇦🇷", AE:"🇦🇪" };
+const FLAG = { TW:"🇹🇼", SG:"🇸🇬", KR:"🇰🇷", MY:"🇲🇾", US:"🇺🇸", HK:"🇭🇰", ID:"🇮🇩", JP:"🇯🇵", VN:"🇻🇳", PH:"🇵🇭", AU:"🇦🇺", FR:"🇫🇷", ES:"🇪🇸", AR:"🇦🇷", ARG:"🇦🇷", AE:"🇦🇪", CH:"🇨🇭" };
 
-// Team logo lockups, keyed by team id. Missing ids fall back to the order/initials box.
-const LOGOS = {
-  decisionslab:'assets/logos/decisionslab.png', hyarks:'assets/logos/hyarks.png',
-  innowave:'assets/logos/innowave.png',
-  krush:'assets/logos/krush.png', lips:'assets/logos/lips.png', notag:'assets/logos/notag.png',
-  novo:'assets/logos/novo.png', pathors:'assets/logos/pathors.png', raptor:'assets/logos/raptor.png',
-  refundy:'assets/logos/refundy.png', rosary:'assets/logos/rosary.png', shieldbase:'assets/logos/shieldbase.png',
-  phasetrum:'assets/logos/phasetrum.png', omniease:'assets/logos/omniease.png',
-  notifly:'assets/logos/notifly.png', greenbidz:'assets/logos/greenbidz.jpg',
-  cloudstation:'assets/logos/cloudstation.png', arrivl:'assets/logos/arrivl.png',
-  ruomei:'assets/logos/ruomei.png', clika:'assets/logos/clika.svg',
-  sixsense:'assets/logos/sixsense.jpeg',
-};
+// Logos and founder portraits come from each team's `logo` / `portrait` field in
+// the data file. No logo -> order/initials box; no portrait -> HQ flag glyph.
 
-// Founder portraits, keyed by team id. Missing ids fall back to the HQ flag glyph.
-const PORTRAITS = {
-  notag:'assets/portraits/notag.jpg', pathors:'assets/portraits/pathors.png',
-  shieldbase:'assets/portraits/shieldbase.png', refundy:'assets/portraits/refundy.png',
-  hyarks:'assets/portraits/hyarks.jpeg', novo:'assets/portraits/novo.png',
-  decisionslab:'assets/portraits/decisionslab.jpg', lips:'assets/portraits/lips.jpeg',
-  raptor:'assets/portraits/raptor.png', rosary:'assets/portraits/rosary.png',
-  krush:'assets/portraits/krush.jpg',
-  phasetrum:'assets/portraits/phasetrum.jpg', omniease:'assets/portraits/omniease.jpg',
-  arrivl:'assets/portraits/arrivl.jpg', ruomei:'assets/portraits/ruomei.jpg',
-  notifly:'assets/portraits/notifly.jpg', innowave:'assets/portraits/innowave.jpg',
-  greenbidz:'assets/portraits/greenbidz.png', cloudstation:'assets/portraits/cloudstation.png',
-  sixsense:'assets/portraits/sixsense.jpeg', clika:'assets/portraits/clika.jpg',
-};
+// Wordmark logos stand alone; icon-only marks (team.logoMark) carry the name beside them.
+function LogoRow({ team, sm }) {
+  const img = <img className={`card-logo-img${sm ? ' sm' : ''}${team.logoMark ? ' mark' : ''}`} src={team.logo} alt={team.name}/>;
+  if (!team.logoMark) return sm ? img : <div className="card-logo-row">{img}</div>;
+  return <div className={`card-logo-row with-name${sm ? ' sm' : ''}`}>{img}<h4>{team.name}</h4></div>;
+}
 
 function LangBadge({ language }) {
   if (window.EVENT_CONFIG && window.EVENT_CONFIG.wordly === false) return null;
+  if (!/^(mandarin|english)/i.test(language || '')) return null; // not confirmed yet
   const isZh = language && language.toLowerCase().startsWith('mandarin');
   return (
     <span className={`badge lang ${isZh ? 'mandarin' : 'english'}`} title={`Pitch language: ${language}`}>
@@ -54,8 +36,8 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
   const liveCls = isLive && accentLive ? 'live' : '';
   const tagCls = team.tags[0] ? `tag-${team.tags[0].toLowerCase().replace(/[^a-z0-9]/g,'-')}` : '';
   const orderStr = String(team.speakerOrder).padStart(2,'0');
-  const logo = LOGOS[team.id];
-  const portrait = PORTRAITS[team.id];
+  const logo = team.logo;
+  const portrait = team.portrait;
 
   if (density === 'compact') {
     return (
@@ -63,7 +45,7 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
         <div className="logo order">{orderStr}</div>
         <div>
           {logo
-            ? <img className="card-logo-img sm" src={logo} alt={team.name}/>
+            ? <LogoRow team={team} sm/>
             : <h4>{team.name}</h4>}
           <div className="sub" style={{marginTop:2}}>{sub}</div>
         </div>
@@ -83,12 +65,12 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
           <div className="role">{team.title}</div>
         </div>
         <div className="compact-actions">
-          <button className={`iconbtn ${favorited ? 'on' : ''}`} onClick={(e) => {e.stopPropagation(); onFav(team.id);}} title="Save to shortlist">
+          <button className={`iconbtn ${favorited ? 'on' : ''}`} onClick={(e) => {e.stopPropagation(); onFav(team.id);}} title="Save to shortlist" data-track="favorite" data-team={team.id} data-x={favorited ? 'remove' : 'add'}>
             {favorited ? <I.heartFill/> : <I.heart/>}
           </button>
-          {team.linkedin && <a className="iconbtn" href={team.linkedin} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title={`${team.presenter} on LinkedIn`}><I.linkedin/></a>}
-          {team.website && <a className="iconbtn" href={team.website} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title="Visit website"><I.globe/></a>}
-          <button className="btn primary sm" onClick={(e)=>{e.stopPropagation(); onIntro(team);}} title={`Email ${team.presenter}`}><I.mail/> Contact</button>
+          {team.linkedin && <a className="iconbtn" href={team.linkedin} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title={`${team.presenter} on LinkedIn`} data-track="linkedin" data-team={team.id}><I.linkedin/></a>}
+          {team.website && <a className="iconbtn" href={team.website} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title="Visit website" data-track="website" data-team={team.id}><I.globe/></a>}
+          {team.email && <button className="btn primary sm" onClick={(e)=>{e.stopPropagation(); onIntro(team);}} title={`Email ${team.presenter}`} data-track="contact_open" data-team={team.id}><I.mail/> Contact</button>}
         </div>
       </article>
     );
@@ -102,7 +84,7 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
         </div>
         <div className="body">
           {logo
-            ? <div className="card-logo-row"><img className="card-logo-img" src={logo} alt={team.name}/></div>
+            ? <LogoRow team={team}/>
             : (
             <div className="head">
               <div className="logo">{initials(team.name)}</div>
@@ -122,18 +104,18 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
               : <div className="flag">{FLAG[team.hq] || ''}</div>}
             <div className="who">
               <b>{team.presenter}</b>
-              <span>{team.title} · {team.hq}</span>
+              <span>{[team.title, team.hq].filter(Boolean).join(' · ')}</span>
             </div>
           </div>
           <div className="foot">
             <div style={{flex:1}}/>
             <div className="actions">
-              <button className={`iconbtn ${favorited ? 'on' : ''}`} onClick={(e)=>{e.stopPropagation(); onFav(team.id);}} title="Save to shortlist">
+              <button className={`iconbtn ${favorited ? 'on' : ''}`} onClick={(e)=>{e.stopPropagation(); onFav(team.id);}} title="Save to shortlist" data-track="favorite" data-team={team.id} data-x={favorited ? 'remove' : 'add'}>
                 {favorited ? <I.heartFill/> : <I.heart/>}
               </button>
-              {team.linkedin && <a className="iconbtn" href={team.linkedin} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title={`${team.presenter} on LinkedIn`}><I.linkedin/></a>}
-              {team.website && <a className="iconbtn" href={team.website} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title="Visit website"><I.globe/></a>}
-              <button className="btn primary sm" onClick={(e)=>{e.stopPropagation(); onIntro(team);}} title={`Email ${team.presenter}`}><I.mail/> Contact founder</button>
+              {team.linkedin && <a className="iconbtn" href={team.linkedin} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title={`${team.presenter} on LinkedIn`} data-track="linkedin" data-team={team.id}><I.linkedin/></a>}
+              {team.website && <a className="iconbtn" href={team.website} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title="Visit website" data-track="website" data-team={team.id}><I.globe/></a>}
+              {team.email && <button className="btn primary sm" onClick={(e)=>{e.stopPropagation(); onIntro(team);}} title={`Email ${team.presenter}`} data-track="contact_open" data-team={team.id}><I.mail/> Contact founder</button>}
             </div>
           </div>
         </div>
@@ -145,7 +127,7 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
   return (
     <article id={`team-${team.id}`} className={`team-card ${liveCls} ${tagCls}`} onClick={() => onOpenLive(team)}>
       {logo
-        ? <div className="card-logo-row"><img className="card-logo-img" src={logo} alt={team.name}/></div>
+        ? <LogoRow team={team}/>
         : (
         <div className="head">
           <div className="logo order">{orderStr}</div>
@@ -165,18 +147,18 @@ function TeamCard({ team, density, favorited, onFav, onIntro, onOpenLive, accent
           : <div className="flag">{FLAG[team.hq] || ''}</div>}
         <div className="who">
           <b>{team.presenter}</b>
-          <span>{team.title} · {team.hq}</span>
+          <span>{[team.title, team.hq].filter(Boolean).join(' · ')}</span>
         </div>
       </div>
       <div className="foot">
         <div style={{flex:1}}/>
         <div className="actions">
-          <button className={`iconbtn ${favorited ? 'on' : ''}`} onClick={(e)=>{e.stopPropagation(); onFav(team.id);}} title="Save to shortlist">
+          <button className={`iconbtn ${favorited ? 'on' : ''}`} onClick={(e)=>{e.stopPropagation(); onFav(team.id);}} title="Save to shortlist" data-track="favorite" data-team={team.id} data-x={favorited ? 'remove' : 'add'}>
             {favorited ? <I.heartFill/> : <I.heart/>}
           </button>
-          {team.linkedin && <a className="iconbtn" href={team.linkedin} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title={`${team.presenter} on LinkedIn`}><I.linkedin/></a>}
-          {team.website && <a className="iconbtn" href={team.website} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title="Visit website"><I.globe/></a>}
-          <button className="btn primary sm" onClick={(e)=>{e.stopPropagation(); onIntro(team);}} title={`Email ${team.presenter}`}><I.mail/> Contact founder</button>
+          {team.linkedin && <a className="iconbtn" href={team.linkedin} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title={`${team.presenter} on LinkedIn`} data-track="linkedin" data-team={team.id}><I.linkedin/></a>}
+          {team.website && <a className="iconbtn" href={team.website} target="_blank" rel="noopener" onClick={(e)=>e.stopPropagation()} title="Visit website" data-track="website" data-team={team.id}><I.globe/></a>}
+          {team.email && <button className="btn primary sm" onClick={(e)=>{e.stopPropagation(); onIntro(team);}} title={`Email ${team.presenter}`} data-track="contact_open" data-team={team.id}><I.mail/> Contact founder</button>}
         </div>
       </div>
     </article>
@@ -189,7 +171,7 @@ function FilterBar({ filter, setFilter, search, setSearch }) {
       <div className="search">
         <I.search/>
         <input
-          placeholder="Search teams, founders, sectors — e.g. 'agentic AI', 'maritime', 'voice'…"
+          placeholder="Search teams, founders, sectors — e.g. 'agents', 'drones', 'post-quantum'…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -211,7 +193,7 @@ function TeamsSection({ favorites, onFav, onIntro, onOpenLive, density, accentIn
   const [search, setSearch] = useState('');
 
   const filtered = TEAMS.filter(t => {
-    if (t.batch === 'WA#10') return false; // shown under the Wistron block
+    if (t.batch === (window.EVENT_CONFIG || {}).wistronBatch) return false; // shown under the Wistron block
     if (filter.tag !== 'All' && !t.tags.includes(filter.tag)) return false;
     if (filter.batches.length && !filter.batches.includes(t.batch)) return false;
     if (filter.languages.length && !filter.languages.includes((t.language || '').split(' ')[0])) return false;
@@ -230,7 +212,7 @@ function TeamsSection({ favorites, onFav, onIntro, onOpenLive, density, accentIn
       <div className="container">
         <div className="section-head">
           <div>
-            {(window.EVENT_CONFIG && window.EVENT_CONFIG.wistron === false) && <div className="eyebrow">AppWorks #32</div>}
+            {(window.EVENT_CONFIG && window.EVENT_CONFIG.wistron === false) && <div className="eyebrow">{window.EVENT_CONFIG.batchLabel}</div>}
             <h2>{tr(language, 'Presenting teams.', ZH.teams.heading)}</h2>
             <p className="sub">{tr(language,
               (window.EVENT_CONFIG && window.EVENT_CONFIG.wistron === false)
